@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -37,9 +39,11 @@ app.route('/chat', chatRouter);
 // Character-specific streaming chat
 app.route('/chat', characterChatRouter);
 
-// Serve frontend — ../frontend is relative to CWD (backend/)
-app.use('/*', serveStatic({ root: '../frontend' }));
-app.get('/', serveStatic({ path: '../frontend/index.html' }));
+// Serve frontend — absolute path so this works regardless of CWD
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const frontendPath = join(__dirname, '../../frontend');
+app.use('/*', serveStatic({ root: frontendPath }));
+app.get('/', serveStatic({ path: join(frontendPath, 'index.html') }));
 
 app.notFound((c) => c.json({ error: 'Route not found.' }, 404));
 
