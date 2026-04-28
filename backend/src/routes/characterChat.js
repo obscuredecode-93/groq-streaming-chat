@@ -70,7 +70,7 @@ router.post('/:characterId', async (c) => {
 
   const messages = [
     { role: 'system', content: character.personality },
-    ...history,
+    ...history.map(({ role, content }) => ({ role, content })),
   ];
 
   return streamSSE(c, async (stream) => {

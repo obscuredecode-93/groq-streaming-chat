@@ -4,7 +4,16 @@
 // ── Config ───────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY  = 'groq-characters-v2';
-const DICEBEAR_BASE = 'https://api.dicebear.com/7.x/avataaars/svg';
+const DICEBEAR_BASE = 'https://api.dicebear.com/9.x';
+
+const AVATAR_STYLES = [
+  { label: 'Avataaars', style: 'avataaars' },
+  { label: 'Bottts',    style: 'bottts'    },
+  { label: 'Fun Emoji', style: 'fun-emoji' },
+  { label: 'Lorelei',   style: 'lorelei'   },
+  { label: 'Micah',     style: 'micah'     },
+  { label: 'Pixel Art', style: 'pixel-art' },
+];
 
 const DEFAULT_CHARACTERS = [
   {
@@ -37,6 +46,7 @@ const DEFAULT_CHARACTERS = [
 
 let currentCharacterId = null;
 let isStreaming        = false;
+let avatarSeed         = null;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 
@@ -50,9 +60,9 @@ const $ = (id) => document.getElementById(id);
 
 // ── Avatar URL ────────────────────────────────────────────────────────────────
 
-function avatarUrl(name) {
-  const seed = encodeURIComponent((name || 'character').trim());
-  return `${DICEBEAR_BASE}?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1f4e0,ffdfbf,ffd5dc&backgroundType=circle`;
+function avatarUrl(name, style = 'avataaars') {
+  const seed = encodeURIComponent((name || 'character').trim().toLowerCase());
+  return `${DICEBEAR_BASE}/${style}/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1f4e0,ffdfbf,ffd5dc`;
 }
 
 // ── localStorage ──────────────────────────────────────────────────────────────
@@ -194,7 +204,7 @@ function renderGallery() {
     card.className = 'char-card';
     card.innerHTML = `
       <div class="char-card-top">
-        <img class="char-avatar-img" src="${avatarUrl(char.name)}" alt="${escHtml(char.name)}" loading="lazy" />
+        <img class="char-avatar-img" src="${avatarUrl(char.avatarSeed || char.name, char.avatarStyle)}" alt="${escHtml(char.name)}" loading="lazy" />
         <div class="char-info">
           <div class="char-name">${escHtml(char.name)}</div>
           <div class="char-desc">${escHtml(char.description)}</div>
@@ -270,6 +280,7 @@ function renderForm(existingChar) {
   oldForm.replaceWith(newForm);
 
   const form = $('character-form');
+  $('form-error').classList.add('hidden');
 
   if (existingChar) {
     $('f-name').value        = existingChar.name        || '';
@@ -278,16 +289,33 @@ function renderForm(existingChar) {
     $('f-greeting').value    = existingChar.greeting    || '';
   }
 
-  // Set initial avatar preview
-  updateAvatarPreview($('f-name').value || existingChar?.name || '');
+  // Set initial avatar style, seed, and preview
+  $('f-avatar-style').value = existingChar?.avatarStyle || 'avataaars';
+  avatarSeed = existingChar?.avatarSeed || null;
+  const _initName = $('f-name').value || existingChar?.name || '';
+  updateAvatarPreview(_initName);
+  renderAvatarPicker(_initName);
 
   $('form-back-btn').onclick   = () => navigate('gallery');
   $('form-cancel-btn').onclick = () => navigate('gallery');
 
-  // Live avatar preview as name changes
+  // Live avatar preview as name changes — also resets seed to name-based
   $('f-name').addEventListener('input', () => {
     clearTimeout(_avatarDebounce);
-    _avatarDebounce = setTimeout(() => updateAvatarPreview($('f-name').value), 300);
+    _avatarDebounce = setTimeout(() => {
+      avatarSeed = null;
+      const n = $('f-name').value;
+      updateAvatarPreview(n);
+      renderAvatarPicker(n);
+    }, 300);
+  });
+
+  // Refresh / shuffle button
+  $('btn-avatar-refresh').addEventListener('click', () => {
+    avatarSeed = Math.random().toString(36).slice(2);
+    const n = $('f-name').value;
+    updateAvatarPreview(n);
+    renderAvatarPicker(n);
   });
 
   // AI generate button
@@ -314,6 +342,8 @@ function renderForm(existingChar) {
     const char = {
       id:          existingChar?.id || crypto.randomUUID(),
       name, description, personality, greeting,
+      avatarStyle: $('f-avatar-style').value || 'avataaars',
+      avatarSeed:  avatarSeed || null,
       createdAt:   existingChar?.createdAt || new Date().toISOString(),
     };
 
@@ -341,7 +371,30 @@ function renderForm(existingChar) {
 function updateAvatarPreview(name) {
   const img = $('f-avatar-preview');
   if (!img) return;
-  img.src = avatarUrl(name || 'preview');
+  const style = $('f-avatar-style')?.value || 'avataaars';
+  img.src = avatarUrl(avatarSeed || name || 'preview', style);
+}
+
+function renderAvatarPicker(name) {
+  const wrap = $('avatar-style-picker');
+  if (!wrap) return;
+  const currentStyle = $('f-avatar-style')?.value || 'avataaars';
+  const seed = avatarSeed || name || 'preview';
+  wrap.innerHTML = '';
+  AVATAR_STYLES.forEach(({ label, style }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = label;
+    btn.className = 'avatar-style-btn' + (style === currentStyle ? ' active' : '');
+    btn.innerHTML = `<img src="${avatarUrl(seed, style)}" width="32" height="32" alt="${label}" />`;
+    btn.addEventListener('click', () => {
+      $('f-avatar-style').value = style;
+      wrap.querySelectorAll('.avatar-style-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateAvatarPreview($('f-name').value);
+    });
+    wrap.appendChild(btn);
+  });
 }
 
 function prefillForm(data) {
@@ -349,7 +402,11 @@ function prefillForm(data) {
   if (data.description) $('f-description').value = data.description;
   if (data.personality) $('f-personality').value = data.personality;
   if (data.greeting)    $('f-greeting').value    = data.greeting;
-  if (data.name)        updateAvatarPreview(data.name);
+  if (data.name) {
+    avatarSeed = null;
+    updateAvatarPreview(data.name);
+    renderAvatarPicker(data.name);
+  }
 }
 
 async function aiGenerateCharacter() {
@@ -388,7 +445,7 @@ function renderChatPage(char) {
   currentCharacterId = char.id;
   isStreaming = false;
 
-  $('chat-avatar-img').src = avatarUrl(char.name);
+  $('chat-avatar-img').src = avatarUrl(char.avatarSeed || char.name, char.avatarStyle);
   $('chat-avatar-img').alt = char.name;
   $('chat-name').textContent        = char.name;
   $('chat-description').textContent = char.description;
@@ -527,7 +584,7 @@ async function sendMessage(char) {
         if (parsed.error) throw new Error(parsed.error);
 
         if (parsed.token) {
-          if (firstToken) { aiBubble.innerHTML = ''; firstToken = false; }
+          if (firstToken) { aiBubble.innerHTML = ''; aiBubble.classList.add('cursor'); firstToken = false; }
           fullText += parsed.token;
           aiBubble.innerHTML = escHtml(fullText);
           scrollBottom(container);
@@ -560,7 +617,7 @@ function appendBubble(container, role, char, content, timestamp) {
 
   const avatarEl = isUser
     ? `<div class="msg-avatar-you">You</div>`
-    : `<img class="msg-avatar-img" src="${avatarUrl(char.name)}" alt="${escHtml(char.name)}" loading="lazy" />`;
+    : `<img class="msg-avatar-img" src="${avatarUrl(char.avatarSeed || char.name, char.avatarStyle)}" alt="${escHtml(char.name)}" loading="lazy" />`;
 
   const timeStr = timestamp ? formatTime(timestamp) : '';
 
@@ -579,9 +636,9 @@ function appendStreamingBubble(container, char) {
   const row = document.createElement('div');
   row.className = 'message-row ai';
   row.innerHTML = `
-    <img class="msg-avatar-img" src="${avatarUrl(char.name)}" alt="${escHtml(char.name)}" />
+    <img class="msg-avatar-img" src="${avatarUrl(char.avatarSeed || char.name, char.avatarStyle)}" alt="${escHtml(char.name)}" />
     <div class="msg-body">
-      <div class="bubble cursor">
+      <div class="bubble">
         <div class="loading-dots"><span></span><span></span><span></span></div>
       </div>
       <div class="msg-timestamp">${formatTime(new Date().toISOString())}</div>
