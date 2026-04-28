@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Groq Characters</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Gallery ────────────────────────────────────────────── -->
+  <div id="page-gallery" class="page">
+    <header class="gallery-header">
+      <div class="gallery-header-left">
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          Groq Characters
+        </div>
+        <span class="model-badge">llama-3.1-8b-instant</span>
+      </div>
+      <div class="gallery-header-right">
+        <button id="btn-suggest-character" class="btn-ghost">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          Suggest
+        </button>
+        <button id="btn-create-character" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create
+        </button>
+      </div>
+    </header>
+
+    <div class="gallery-body">
+      <div class="gallery-toolbar">
+        <div class="search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input id="gallery-search" type="search" placeholder="Search characters…" autocomplete="off" />
+        </div>
+        <span id="gallery-count" class="gallery-count"></span>
+      </div>
+
+      <div id="character-grid" class="character-grid"></div>
+
+      <div id="gallery-empty" class="gallery-empty hidden">
+        <div class="empty-illustration">🎭</div>
+        <h3>No characters yet</h3>
+        <p>Create your first character or let AI suggest one for you.</p>
+        <button id="btn-empty-create" class="btn-primary" style="margin-top:8px">Create a character</button>
+      </div>
+
+      <div id="gallery-no-results" class="gallery-empty hidden">
+        <div class="empty-illustration">🔍</div>
+        <h3>No matches</h3>
+        <p>Try a different search term.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Form (create / edit) ───────────────────────────────── -->
+  <div id="page-form" class="page hidden">
+    <header class="inner-header">
+      <button class="btn-back" id="form-back-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+      <h1 id="form-title">Create Character</h1>
+      <div style="width:60px"></div>
+    </header>
+
+    <div class="form-body">
+      <form id="character-form" novalidate>
+
+        <!-- Avatar preview + name row -->
+        <div class="form-avatar-row">
+          <div class="avatar-preview-wrap">
+            <img id="f-avatar-preview" class="avatar-preview-img" src="" alt="Avatar preview" />
+            <span class="avatar-preview-hint">Auto-generated</span>
+          </div>
+          <div class="form-name-col">
+            <div class="form-group">
+              <label for="f-name">Name <span class="required">*</span></label>
+              <div class="name-input-row">
+                <input id="f-name" name="name" type="text" placeholder="e.g. Theron the Wise" required autocomplete="off" />
+                <button type="button" id="btn-ai-generate" class="btn-ai-generate" title="Generate character details with AI">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  Generate
+                </button>
+              </div>
+              <span class="field-hint">Type a name then click Generate to fill the fields automatically.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-description">Short Description <span class="required">*</span></label>
+          <input id="f-description" name="description" type="text"
+            placeholder="A brief bio shown in the gallery…" required />
+        </div>
+
+        <div class="form-group">
+          <label for="f-personality">Personality (System Prompt) <span class="required">*</span></label>
+          <textarea id="f-personality" name="personality" rows="7"
+            placeholder="Describe how this character speaks, thinks, and behaves. This becomes the system prompt sent to the AI…" required></textarea>
+          <span class="field-hint">Be specific — tone, vocabulary, knowledge, quirks.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="f-greeting">Greeting Message <span class="required">*</span></label>
+          <textarea id="f-greeting" name="greeting" rows="3"
+            placeholder="The first thing this character says when a new chat begins…" required></textarea>
+        </div>
+
+        <div id="form-error" class="form-error hidden"></div>
+
+        <div class="form-actions">
+          <button type="button" id="form-cancel-btn" class="btn-secondary">Cancel</button>
+          <button type="submit" id="form-save-btn" class="btn-primary">Save Character</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Chat ───────────────────────────────────────────────── -->
+  <div id="page-chat" class="page hidden">
+    <header class="chat-header">
+      <button class="btn-back" id="chat-back-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Gallery
+      </button>
+      <div class="chat-character-info">
+        <img id="chat-avatar-img" class="chat-avatar-img" src="" alt="" />
+        <div>
+          <div id="chat-name" class="chat-name"></div>
+          <div id="chat-description" class="chat-description"></div>
+        </div>
+      </div>
+      <button id="chat-clear-btn" class="btn-ghost">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+        </svg>
+        Clear
+      </button>
+    </header>
+
+    <main id="chat-messages" class="chat-messages"></main>
+
+    <div class="chat-input-area">
+      <div class="input-wrapper">
+        <textarea id="chat-input" placeholder="Send a message…" rows="1" maxlength="4000"></textarea>
+        <button id="chat-send-btn" class="send-btn" disabled>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast + confirm modal -->
+<div id="error-toast" class="error-toast" aria-live="polite"></div>
+
+<div id="confirm-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <p id="modal-message"></p>
+    <div class="modal-actions">
+      <button id="modal-cancel"  class="btn-secondary">Cancel</button>
+      <button id="modal-confirm" class="btn-danger">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+</body>
+</html>

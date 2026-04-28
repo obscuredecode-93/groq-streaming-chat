@@ -1,0 +1,10 @@
+{
+  "name": "groq-streaming-chat",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/kill-port.js",
+    "start": "npm start --prefix backend",
+    "dev": "npm run dev --prefix backend"
+  }
+}

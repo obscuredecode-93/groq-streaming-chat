@@ -1,0 +1,21 @@
+{
+  "name": "groq-streaming-chat-backend",
+  "version": "1.0.0",
+  "description": "Hono + Groq streaming chat API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.0",
+    "dotenv": "^17.4.2",
+    "groq-sdk": "^1.1.2",
+    "hono": "^4.12.15",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
